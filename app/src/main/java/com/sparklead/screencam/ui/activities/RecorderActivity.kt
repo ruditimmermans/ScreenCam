@@ -18,6 +18,7 @@ import com.hbisoft.hbrecorder.HBRecorder
 import com.hbisoft.hbrecorder.HBRecorderListener
 import com.sparklead.screencam.R
 import com.sparklead.screencam.databinding.ActivityRecorderBinding
+import com.sparklead.screencam.services.BackgroundService
 import com.sparklead.screencam.utils.Constants
 import java.io.File
 import java.sql.Date
@@ -68,21 +69,22 @@ class RecorderActivity : AppCompatActivity(), View.OnClickListener, HBRecorderLi
     }
 
     private fun checkAllPermission() {
-
-        if (Build.VERSION.SDK_INT >= 33) {
-            val permissions = arrayOf(
+        val permissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            arrayOf(
                 Manifest.permission.READ_MEDIA_AUDIO,
                 Manifest.permission.READ_MEDIA_VIDEO,
-                Manifest.permission.READ_MEDIA_IMAGES
+                Manifest.permission.READ_MEDIA_IMAGES,
+                Manifest.permission.RECORD_AUDIO,
+                Manifest.permission.POST_NOTIFICATIONS
             )
-            permissionLauncher.launch(permissions)
         } else {
-            val permissions = arrayOf(
+            arrayOf(
                 Manifest.permission.READ_EXTERNAL_STORAGE,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE
+                Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                Manifest.permission.RECORD_AUDIO
             )
-            permissionLauncher.launch(permissions)
         }
+        permissionLauncher.launch(permissions)
     }
 
     private val permissionLauncher = registerForActivityResult(
@@ -93,6 +95,7 @@ class RecorderActivity : AppCompatActivity(), View.OnClickListener, HBRecorderLi
         for (isGranted in result.values) {
             areAllGranted = areAllGranted && isGranted
         }
+        hasPermission = areAllGranted
 
         if (areAllGranted) {
             startRecording()
@@ -121,12 +124,26 @@ class RecorderActivity : AppCompatActivity(), View.OnClickListener, HBRecorderLi
     }
 
     private fun startRecording() {
-        if (hasPermission) {
-            if (hbRecorder!!.isBusyRecording) {
-                hbRecorder!!.stopScreenRecording()
-            }
+        if (hbRecorder!!.isBusyRecording) {
+            hbRecorder!!.stopScreenRecording()
         } else {
             startRecordingScreen()
+        }
+    }
+
+    private val screenCaptureLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK && result.data != null) {
+            setOutputPath()
+            // Start service before recording for Android 14+
+            val serviceIntent = Intent(this, BackgroundService::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(serviceIntent)
+            } else {
+                startService(serviceIntent)
+            }
+            hbRecorder!!.startScreenRecording(result.data, result.resultCode)
         }
     }
 
@@ -138,7 +155,7 @@ class RecorderActivity : AppCompatActivity(), View.OnClickListener, HBRecorderLi
         val mediaProjectionManager =
             getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
         val permissionIntent = mediaProjectionManager.createScreenCaptureIntent()
-        startActivityForResult(permissionIntent, Constants.SCREEN_RECORD_REQUEST_CODE)
+        screenCaptureLauncher.launch(permissionIntent)
     }
 
 
@@ -156,8 +173,8 @@ class RecorderActivity : AppCompatActivity(), View.OnClickListener, HBRecorderLi
 
 
     private fun createFolder() {
-        //Saved recorded to Download folder with ScreenCam folder
-        val path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        //Saved recorded to Movies folder with ScreenCam folder
+        val path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES)
         val folder = File(path, "ScreenCam")
 
         //if there is no such folder then create new folder
@@ -167,23 +184,11 @@ class RecorderActivity : AppCompatActivity(), View.OnClickListener, HBRecorderLi
     }
 
 
-    @Deprecated("Deprecated in Java")
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == Constants.SCREEN_RECORD_REQUEST_CODE) {
-            if (resultCode == RESULT_OK) {
-                //Set file path or Uri
-                setOutputPath()
 
-                //Start screen recording
-                hbRecorder!!.startScreenRecording(data, resultCode)
-            }
-        }
-    }
 
     private fun setOutputPath() {
         // Set system default time
-        val formatter = SimpleDateFormat("yyyy-MM-dd-HH-mm-ss", Locale.getDefault())
+        val formatter = SimpleDateFormat("dd-MM-yyyy-HH-mm-ss", Locale.getDefault())
         val curDate = Date(System.currentTimeMillis())
         val fileName = formatter.format(curDate).replace(" ", "")
 
@@ -191,11 +196,11 @@ class RecorderActivity : AppCompatActivity(), View.OnClickListener, HBRecorderLi
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val resolver = contentResolver
             val contentValues = ContentValues()
-            contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, "ScreenCam")
-            contentValues.put(MediaStore.MediaColumns.TITLE, fileName)
-            contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
-            contentValues.put(MediaStore.MediaColumns.MIME_TYPE, "video/mp4")
-            val mUri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
+            contentValues.put(MediaStore.Video.Media.TITLE, fileName)
+            contentValues.put(MediaStore.Video.Media.DISPLAY_NAME, fileName)
+            contentValues.put(MediaStore.Video.Media.MIME_TYPE, "video/mp4")
+            contentValues.put(MediaStore.Video.Media.RELATIVE_PATH, "Movies/ScreenCam")
+            val mUri = resolver.insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, contentValues)
             //File name should be same
             hbRecorder!!.fileName = fileName
             hbRecorder!!.setOutputUri(mUri)
@@ -203,14 +208,13 @@ class RecorderActivity : AppCompatActivity(), View.OnClickListener, HBRecorderLi
             //Created folder
             createFolder()
             hbRecorder!!.setOutputPath(
-                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES)
                     .toString() + "/ScreenCam"
             )
         }
     }
 
     override fun HBRecorderOnStart() {
-        //After screen recording start working
         binding.ivRecord.visibility = View.GONE
         binding.ivPause.visibility = View.VISIBLE
         Toast.makeText(this, "Recording Starts", Toast.LENGTH_SHORT).show()
@@ -218,24 +222,43 @@ class RecorderActivity : AppCompatActivity(), View.OnClickListener, HBRecorderLi
 
     override fun HBRecorderOnComplete() {
         //After screen recording complete
-        hbRecorder!!.stopScreenRecording()
+        stopService(Intent(this, BackgroundService::class.java))
         binding.ivPause.visibility = View.GONE
         binding.ivRecord.visibility = View.VISIBLE
         Toast.makeText(
             this,
-            "Recording saved to your Download folder Successfully",
+            "Recording saved to Movies/ScreenCam folder Successfully",
             Toast.LENGTH_LONG
         ).show()
+    }
+
+    override fun HBRecorderOnPause() {
+        // Implement if needed
+    }
+
+    override fun HBRecorderOnResume() {
+        // Implement if needed
     }
 
     override fun HBRecorderOnError(errorCode: Int, reason: String?) {
         // After any exception
         Log.e("Error", reason.toString())
+        Toast.makeText(this, "Error: $reason", Toast.LENGTH_SHORT).show()
+        stopService(Intent(this, BackgroundService::class.java))
+        binding.ivPause.visibility = View.GONE
+        binding.ivRecord.visibility = View.VISIBLE
     }
 
     override fun onResume() {
         super.onResume()
         getBasicOptions()
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        if (intent?.action == Constants.STOP_RECORDING_ACTION) {
+            hbRecorder!!.stopScreenRecording()
+        }
     }
 
 }

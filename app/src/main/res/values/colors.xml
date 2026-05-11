@@ -8,8 +8,9 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
-    //App_theme_color
-    <color name="dark_color">#313642</color>
+    <!-- App theme colors -->
+    <color name="dark_color">#121212</color>
+    <color name="dark_color_variant">#313642</color>
     <color name="dark_green">#00de7a</color>
     <color name="app_grey">#4d5368</color>
 </resources>

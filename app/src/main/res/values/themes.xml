@@ -11,12 +11,10 @@
         <item name="colorOnSecondary">@color/black</item>
         <!-- Status bar color. -->
         <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
-        <!-- Customize your theme here. -->
     </style>
 
-
-    //Implemented by own theme
-    <style name="Theme.ScreenCam_dark" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+    <!-- Dark theme for activities -->
+    <style name="Theme.ScreenCam_dark" parent="Theme.MaterialComponents.NoActionBar">
         <!-- Primary brand color. -->
         <item name="colorPrimary">@color/white</item>
         <item name="colorPrimaryVariant">@color/purple_700</item>
@@ -25,9 +23,11 @@
         <item name="colorSecondary">@color/dark_green</item>
         <item name="colorSecondaryVariant">@color/dark_green</item>
         <item name="colorOnSecondary">@color/black</item>
+        <!-- Background and text colors -->
+        <item name="android:windowBackground">@color/dark_color</item>
+        <item name="android:textColorPrimary">@color/white</item>
         <!-- Status bar color. -->
         <item name="android:statusBarColor">@color/dark_color</item>
         <item name="android:windowTranslucentNavigation">false</item>
-        <!-- Customize your theme here. -->
     </style>
 </resources>

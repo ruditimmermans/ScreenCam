@@ -3,15 +3,17 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:ignore="ExtraText">
 
-    //Compile type permission
+    <!-- Compile type permission -->
     <uses-permission android:name="android.permission.WRITE_INTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
 
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO"/>
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:allowBackup="true"
@@ -23,7 +25,7 @@
         android:hardwareAccelerated="true"
         android:supportsRtl="true"
         android:theme="@style/Theme.ScreenCam"
-        tools:targetApi="31">
+        tools:targetApi="34">
         <activity
             android:name=".ui.activities.SplashScreenActivity"
             android:exported="true"
@@ -38,6 +40,18 @@
         <activity
             android:name=".ui.activities.RecorderActivity"
             android:theme="@style/Theme.ScreenCam_dark"
+            android:launchMode="singleTask"
+            android:exported="false" />
+
+        <service
+            android:name=".services.BackgroundService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="mediaProjection" />
+
+        <service
+            android:name="com.hbisoft.hbrecorder.ScreenRecordService"
+            android:foregroundServiceType="mediaProjection"
             android:exported="false" />
 
     </application>

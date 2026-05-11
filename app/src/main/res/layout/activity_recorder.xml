@@ -10,7 +10,7 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@color/dark_color"
+        android:background="?android:attr/windowBackground"
         tools:context=".ui.activities.RecorderActivity">
 
         <TextView
@@ -21,7 +21,7 @@
             android:text="Screen Cam"
             android:fontFamily="@font/poppins_medium"
             android:textAlignment="center"
-            android:textColor="@color/white"
+            android:textColor="?android:attr/textColorPrimary"
             android:textSize="24sp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -58,7 +58,7 @@
                 android:fontFamily="@font/poppins_light"
                 android:gravity="center"
                 android:text="High Defination"
-                android:textColor="@android:color/white"
+                android:textColor="?android:attr/textColorPrimary"
                 android:textSize="18sp"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toStartOf="@+id/sw_enable_disable"
@@ -89,7 +89,7 @@
                 android:fontFamily="@font/poppins_light"
                 android:gravity="center"
                 android:text="Record Audio   "
-                android:textColor="@android:color/white"
+                android:textColor="?android:attr/textColorPrimary"
                 android:textSize="18sp"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toStartOf="@+id/sw_enable_disable"
